@@ -1,0 +1,34 @@
+# 依赖
+node_modules/
+
+# 构建产物
+release/
+release-*/
+dist/
+builder-debug.yml
+*.nsis.7z
+__uninstaller.exe
+
+# 本地开发临时目录与调试产物
+.tmp/
+output/
+ok/
+.visual-qa-user-data-*/
+playwright-report/
+test-results/
+
+# UI 审计产物（体积大，属本地开发中间结果）
+tests/artifacts/
+
+# 日志与覆盖报告
+*.log
+coverage/
+
+# 编辑器与系统
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# WorkBuddy 工作区数据（含会话记忆，不公开）
+.workbuddy/

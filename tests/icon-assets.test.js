@@ -27,8 +27,8 @@ test('in-app brand and Windows shortcuts both use the custom icon', () => {
   const html = fs.readFileSync(path.resolve(__dirname, '..', 'src', 'renderer', 'index.html'), 'utf8');
   const installer = fs.readFileSync(path.resolve(__dirname, '..', 'build', 'installer.nsh'), 'utf8');
   assert.match(html, /class="brand-mark" src="\.\.\/\.\.\/assets\/icon\.png"/);
-  assert.match(installer, /CreateShortCut "\$DESKTOP\\Dev Launcher\.lnk"[^\r\n]+resources\\app\\assets\\icon\.ico/);
-  assert.match(installer, /CreateShortCut "\$SMPROGRAMS\\Dev Launcher\.lnk"[^\r\n]+resources\\app\\assets\\icon\.ico/);
+  assert.match(installer, /CreateShortCut "\$DESKTOP\\Dev Launcher\.lnk"[^\r\n]+resources\\app\.asar\.unpacked\\assets\\icon\.ico/);
+  assert.match(installer, /CreateShortCut "\$SMPROGRAMS\\Dev Launcher\.lnk"[^\r\n]+resources\\app\.asar\.unpacked\\assets\\icon\.ico/);
 });
 
 test('compact sidebar exposes directory tree and project folders', () => {

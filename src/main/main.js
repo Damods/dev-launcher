@@ -109,7 +109,7 @@ function createWindow() {
     show: false,
     frame: false,
     thickFrame: true,
-    backgroundColor: theme === 'dark' ? '#0d1117' : '#dce9f8',
+    backgroundColor: theme === 'dark' ? '#08171f' : '#e4f5f8',
     title: 'Dev Launcher',
     icon: path.join(app.getAppPath(), 'assets', 'icon.ico'),
     webPreferences: {

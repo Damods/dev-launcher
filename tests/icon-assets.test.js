@@ -53,7 +53,12 @@ test('liquid glass material uses real backdrop blur with a software fallback', (
   const styles = fs.readFileSync(path.resolve(__dirname, '..', 'src', 'renderer', 'styles.css'), 'utf8');
   const main = fs.readFileSync(path.resolve(__dirname, '..', 'src', 'main', 'main.js'), 'utf8');
   assert.match(styles, /backdrop-filter\s*:[^;]*blur\(/);
-  assert.match(styles, /--lg-blur-lg:\s*32px;/);
+  // 主面板模糊半径是液态玻璃的核心:必须足够大(≥40px)才能透出背景层次
+  const blurLg = Number(styles.match(/--lg-blur-lg:\s*(\d+)px;/)?.[1] || 0);
+  assert.ok(blurLg >= 40, `expected --lg-blur-lg >= 40px, got ${blurLg}px`);
+  // 饱和度必须克制,过高的 saturate 是"AI 味"的主要来源
+  const saturate = Number(styles.match(/--lg-saturate:\s*(\d+)%;/)?.[1] || 0);
+  assert.ok(saturate > 0 && saturate <= 150, `expected --lg-saturate <= 150%, got ${saturate}%`);
   assert.doesNotMatch(styles, /content-visibility:\s*auto;/);
   assert.match(main, /DEV_LAUNCHER_SOFTWARE/);
 });

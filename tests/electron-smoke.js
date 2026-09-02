@@ -283,6 +283,20 @@ async function main() {
       await client.evaluate(`commitTheme('dark', false)`);
       await captureScreenshot(client, process.env.DEV_LAUNCHER_COMPACT_DARK_SCREENSHOT);
     }
+    // Regression guard (v1.13.3): closing the window must HIDE it to the tray while the
+    // app keeps running (never destroy + isQuitting=true). Waking via the shared
+    // showWindow entry point (second-instance here, tray click uses the same path)
+    // must restore visibility — otherwise the window is "half dead".
+    const closeToTray = await client.evaluate(`(async () => { window.devLauncher.closeWindow(); await new Promise((resolve) => setTimeout(resolve, 250)); return document.visibilityState; })()`);
+    assert.equal(closeToTray.result.value, 'hidden', `关窗后应隐藏到托盘，实际 ${closeToTray.result.value}`);
+    const wakeSecond = spawn(electronPath, [appPath, `--user-data-dir=${userData}`, '--no-sandbox', '--disable-gpu-sandbox', '--in-process-gpu', '--use-angle=swiftshader'], { cwd: appPath, windowsHide: true, stdio: 'ignore' });
+    try {
+      const wakeToVisible = await client.evaluate(`(async () => { const deadline = Date.now() + 10000; while (document.visibilityState !== 'visible' && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 100)); return document.visibilityState; })()`);
+      assert.equal(wakeToVisible.result.value, 'visible', `唤醒入口应恢复窗口，实际 ${wakeToVisible.result.value}`);
+    } finally {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      if (wakeSecond.exitCode === null) wakeSecond.kill();
+    }
     console.log('Electron smoke test passed: custom titlebar, grouping preflight, dialogs, incremental live logs and stable log search.');
   } finally {
     try { await client?.evaluate('window.devLauncher.quit()'); } catch {}

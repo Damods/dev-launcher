@@ -68,4 +68,28 @@ function shouldQuitOnWindowClose(runningProjectCount) {
   return runningProjectCount <= 0;
 }
 
-module.exports = { normalizePath, projectId, stripAnsi, extractUrls, parseArgs, quoteWindowsArg, shouldQuitOnWindowClose };
+// 构造托盘点击 / second-instance / activate 等入口共用的 showWindow 回调。
+// 关键守卫：主窗口在 app.quit 流程后会被销毁，但 window-all-closed 被订阅以保留托盘，
+// 此时托盘点击若直接访问已销毁的 BrowserWindow 会抛 "Object has been destroyed"。
+// 这里同时挡住 destroyed 与 isQuitting 两个分支：
+//   - isQuitting=true：进程正在退出，不重建窗口避免回滚；
+//   - 主窗口为 null 或已 destroyed：调用 recreateWindow() 重新创建，
+//     ready-to-show 会自己 show，主流程无需关心。
+function createShowWindow({ getMainWindow, getIsQuitting, recreateWindow } = {}) {
+  if (typeof getMainWindow !== 'function' || typeof getIsQuitting !== 'function' || typeof recreateWindow !== 'function') {
+    throw new Error('createShowWindow 需要 getMainWindow / getIsQuitting / recreateWindow 三个函数参数');
+  }
+  return function showWindow() {
+    if (getIsQuitting()) return;
+    const mainWindow = getMainWindow();
+    if (!mainWindow || (typeof mainWindow.isDestroyed === 'function' && mainWindow.isDestroyed())) {
+      recreateWindow();
+      return;
+    }
+    mainWindow.show();
+    if (typeof mainWindow.isMinimized === 'function' && mainWindow.isMinimized()) mainWindow.restore();
+    if (typeof mainWindow.focus === 'function') mainWindow.focus();
+  };
+}
+
+module.exports = { normalizePath, projectId, stripAnsi, extractUrls, parseArgs, quoteWindowsArg, shouldQuitOnWindowClose, createShowWindow };

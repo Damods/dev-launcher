@@ -4,7 +4,7 @@ const { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeImage, safeS
 const { StateStore } = require('./store');
 const { scanRoot } = require('./scanner');
 const { ProcessManager } = require('./process-manager');
-const { parseArgs, shouldQuitOnWindowClose } = require('./utils');
+const { parseArgs, shouldQuitOnWindowClose, createShowWindow } = require('./utils');
 
 // Liquid Glass 材质依赖 GPU 加速渲染 backdrop-filter,默认开启硬件加速。
 // 若在个别机器上遇到驱动崩溃,可设置环境变量 DEV_LAUNCHER_SOFTWARE=1 回退软件渲染。
@@ -58,12 +58,14 @@ function createTrayIcon() {
   return trayIcon.resize({ width: 16, height: 16, quality: 'best' });
 }
 
-function showWindow() {
-  if (!mainWindow) return;
-  mainWindow.show();
-  if (mainWindow.isMinimized()) mainWindow.restore();
-  mainWindow.focus();
-}
+// 由 createShowWindow 工厂生成,统一处理 mainWindow 为 null / destroyed 的边界,
+// 避免托盘单击或 second-instance 触发 "Object has been destroyed"。
+// isQuitting=true 时直接放弃,退出流程中不应反向重建窗口。
+const showWindow = createShowWindow({
+  getMainWindow: () => mainWindow,
+  getIsQuitting: () => isQuitting,
+  recreateWindow: createWindow
+});
 
 function updateTrayMenu() {
   if (!tray || !processManager) return;

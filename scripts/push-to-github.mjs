@@ -43,21 +43,6 @@ async function api(method, path, body, upload = false) {
   return json;
 }
 
-const RELEASE_NOTES = `## 修复
-
-### 安装/升级
-- **根治升级安装报错 "Failed to uninstall old application files: 2"**：升级时若 Dev Launcher 仍在运行，旧版卸载器可能因安装目录文件被占用而静默失败。现在安装器会在升级开始前自动结束所有 Dev Launcher 进程，升级不再被文件锁卡住。
-
-### 稳定性
-- 修复托盘点击可能触发 \`Object has been destroyed\` 崩溃：窗口销毁后点击托盘图标将自动重建窗口。（v1.13.1）
-
-### 界面（自 v1.11.1 以来的累积更新）
-- 全新深色精简产品界面：移除毛玻璃效果，深色基底 + 天空蓝强调色，GPU 占用显著降低（v1.13.0）
-- 关闭窗口逻辑简化：无运行项目直接退出，有运行项目弹窗提示（v1.12.3）
-
-完整变更见 [Commits](https://github.com/Damods/dev-launcher/commits/main)
-`;
-
 async function main() {
   const localHead = out(['rev-parse', 'HEAD']).trim();
   const ref = await api('GET', `/repos/${REPO}/git/ref/heads/main`);
@@ -138,40 +123,67 @@ async function main() {
   await api('PATCH', `/repos/${REPO}/git/refs/heads/main`, { sha: shaMap[localHead], force: true });
   console.log(`main force-updated to ${shaMap[localHead]}`);
 
-  // Tags (only ones whose target commit we just pushed)
+  // Tags: mirror every LOCAL tag whose target commit is in the pushed chain
+  // (remote tags for old synthetic commits keep their existing targets).
   const existing = await api('GET', `/repos/${REPO}/git/refs/tags`);
   const existingTags = new Set(existing.map((t) => t.ref.replace('refs/tags/', '')));
-  for (const t of ['v1.12.3', 'v1.13.0', 'v1.13.1', 'v1.13.2']) {
+  const localTags = out(['tag', '-l']).trim().split('\n').filter(Boolean);
+  for (const t of localTags) {
     if (existingTags.has(t)) { console.log(`tag ${t}: exists, skip`); continue; }
-    const localSha = out(['rev-parse', t]).trim();
-    const target = shaMap[localSha] ?? localSha;
-    await api('POST', `/repos/${REPO}/git/refs`, { ref: `refs/tags/${t}`, sha: target });
-    console.log(`tag ${t} -> ${target.slice(0, 7)} created`);
+    const targetLocal = out(['rev-parse', `${t}^{commit}`]).trim();
+    if (!shaMap[targetLocal]) continue; // tag not pointing into this chain, skip
+    await api('POST', `/repos/${REPO}/git/refs`, { ref: `refs/tags/${t}`, sha: shaMap[targetLocal] });
+    console.log(`tag ${t} -> ${shaMap[targetLocal].slice(0, 7)} created`);
   }
 
-  // Release v1.13.2
+  // Release: driven by RELEASE_TAG (default = newest local tag). Skip if exists.
+  const releaseTag = process.env.RELEASE_TAG
+    || out(['tag', '-l', '--sort=-v:refname']).trim().split('\n').filter(Boolean)[0];
+  const releaseVer = releaseTag.replace(/^v/, '');
   const releases = await api('GET', `/repos/${REPO}/releases`);
-  if (releases.some((r) => r.tag_name === 'v1.13.2')) {
-    console.log('Release v1.13.2 exists, skip');
+  if (releases.some((r) => r.tag_name === releaseTag)) {
+    console.log(`Release ${releaseTag} exists, skip`);
   } else {
     const rel = await api('POST', `/repos/${REPO}/releases`, {
-      tag_name: 'v1.13.2',
-      name: 'Dev Launcher v1.13.2',
-      body: RELEASE_NOTES,
+      tag_name: releaseTag,
+      name: `Dev Launcher ${releaseTag}`,
+      body: releaseNotesFor(releaseVer),
       draft: false,
       prerelease: false,
     });
-    console.log(`Release v1.13.2 created (id ${rel.id}), uploading ~97MB asset...`);
-    const exe = readFileSync('release-1.13.2/Dev Launcher Setup 1.13.2.exe');
+    console.log(`Release ${releaseTag} created (id ${rel.id}), uploading ~97MB asset...`);
+    const exePath = process.env.RELEASE_ASSET || `release-${releaseVer}/Dev Launcher Setup ${releaseVer}.exe`;
+    const assetName = `Dev.Launcher.Setup.${releaseVer}.exe`;
+    const exe = readFileSync(exePath);
     const asset = await api(
       'POST',
-      `https://uploads.github.com/repos/${REPO}/releases/${rel.id}/assets?name=${encodeURIComponent('Dev.Launcher.Setup.1.13.2.exe')}`,
+      `https://uploads.github.com/repos/${REPO}/releases/${rel.id}/assets?name=${encodeURIComponent(assetName)}`,
       exe, true,
     );
     console.log(`Asset uploaded: ${asset.browser_download_url}`);
   }
 
   console.log('ALL DONE');
+}
+
+function releaseNotesFor(ver) {
+  const notes = {
+    '1.13.3': `## 修复
+
+### 窗口与托盘（v1.13.3）
+- **修复关闭窗口后无法从托盘唤醒的问题**：点击关闭按钮现在会将窗口最小化到系统托盘（首次弹出气泡提示），应用继续在后台运行，随时点击托盘图标即可恢复窗口。此前无运行项目时关窗会直接销毁窗口并尝试退出，一旦退出被拦截就会陷入"半死"状态，只能通过任务管理器结束进程。
+- 真正退出请使用托盘菜单或应用内的"退出"入口。
+
+### 安装/升级
+- 根治升级安装报错 "Failed to uninstall old application files: 2"（v1.13.2）：升级时安装器会自动结束所有 Dev Launcher 进程，升级不再被文件锁卡住。
+
+### 稳定性
+- 修复托盘点击可能触发 \`Object has been destroyed\` 崩溃：窗口销毁后点击托盘图标将自动重建窗口（v1.13.1）。
+
+完整变更见 [Commits](https://github.com/Damods/dev-launcher/commits/main)
+`
+  };
+  return notes[ver] || `Dev Launcher ${ver}\n\n完整变更见 [Commits](https://github.com/Damods/dev-launcher/commits/main)\n`;
 }
 
 main().catch((e) => { console.error('FAILED:', e.message); process.exit(1); });

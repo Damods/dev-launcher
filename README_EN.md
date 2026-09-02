@@ -33,7 +33,7 @@ Dark / light themes can be switched at any time:
 - Auto-extract HTTP/HTTPS URLs from logs for manual copy or open
 - Clickable HTTP/HTTPS URLs inside log content that open in your default browser
 - Create frontend/backend launch groups and start/stop them with one click
-- On window close: quit directly when no projects are running; when projects are running, a confirmation prompt blocks accidental closing (no orphaned child processes), and the window can be restored from the system tray
+- Clicking close minimizes the app to the system tray and keeps it running in the background (with a one-time balloon hint); click the tray icon anytime to restore the window. Closing is blocked by a prompt while projects are running to avoid orphaned child processes — quit for real via the tray menu or the in-app exit action
 - Local persisted configuration; environment variables are encrypted at the Windows current-user scope
 
 ## Installation

@@ -405,7 +405,7 @@ function setView(view) {
     projects: ['全部项目', '集中启动和管理本地开发服务'],
     groups: ['启动组', '一键运行需要共同工作的多个项目'],
     roots: ['代码目录', '管理软件自动扫描的代码位置'],
-    settings: ['设置', '应用行为和本地数据说明']
+    settings: ['设置', '日志保留与本地数据说明']
   }[view];
   $('#pageTitle').textContent = copy[0];
   $('#pageSubtitle').textContent = copy[1];
@@ -535,8 +535,6 @@ function renderSettings() {
   const hiddenProjects = state.projects.filter((project) => project.hidden);
   $('#content').innerHTML = `<div class="settings-layout">
     <div class="settings-card">
-      <div class="settings-section-title"><div><h2>应用行为</h2><p>这些设置会立即保存到本机</p></div></div>
-      <label class="settings-row settings-interactive"><span class="settings-copy"><strong>关闭主窗口</strong><small>关闭时缩小到系统托盘，项目继续运行</small></span><input type="checkbox" data-setting="closeToTray" ${state.settings.closeToTray ? 'checked' : ''}></label>
       <label class="settings-row settings-interactive"><span class="settings-copy"><strong>日志保留上限</strong><small>达到上限后自动移除最早的日志</small></span><select data-setting="maxLogLines">${[1000, 5000, 10000, 20000].map((value) => `<option value="${value}" ${Number(state.settings.maxLogLines) === value ? 'selected' : ''}>${value.toLocaleString()} 行 / 项目</option>`).join('')}</select></label>
       <div class="settings-row"><span class="settings-copy"><strong>项目分类</strong><small>按启动项所在的直接父文件夹分组</small></span><span>自动分组</span></div>
       <div class="settings-row"><span class="settings-copy"><strong>本地数据与环境变量</strong><small>配置仅保存在本机，环境变量使用 Windows 当前用户范围加密</small></span><span>受保护</span></div>
@@ -832,10 +830,7 @@ document.addEventListener('keydown', (event) => {
 document.addEventListener('change', async (event) => {
   const control = event.target.closest('[data-setting]');
   if (!control) return;
-  const patch = control.dataset.setting === 'closeToTray'
-    ? { closeToTray: control.checked }
-    : { maxLogLines: Number(control.value) };
-  const settings = await run(() => api.updateSettings(patch), '设置已保存');
+  const settings = await run(() => api.updateSettings({ maxLogLines: Number(control.value) }), '设置已保存');
   if (settings) state.settings = settings;
   else renderSettings();
 });

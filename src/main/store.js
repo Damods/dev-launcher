@@ -7,7 +7,7 @@ const DEFAULT_STATE = {
   roots: [],
   projects: [],
   groups: [],
-  settings: { maxLogLines: 10000, closeToTray: true, theme: '' }
+  settings: { maxLogLines: 10000, theme: '' }
 };
 
 function validateState(raw) {
@@ -113,7 +113,6 @@ class StateStore {
   }
 
   updateSettings(patch) {
-    if (patch.closeToTray !== undefined) this.state.settings.closeToTray = Boolean(patch.closeToTray);
     if (patch.theme !== undefined) {
       if (!['light', 'dark', ''].includes(patch.theme)) throw new Error('主题设置无效');
       this.state.settings.theme = patch.theme;

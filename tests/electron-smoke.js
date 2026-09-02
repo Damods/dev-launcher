@@ -133,7 +133,7 @@ async function main() {
       { id: 'smoke-broken', name: 'broken-hidden-project', path: portalPath, type: 'frontend', evidence: 'package.json', missing: false, hidden: true, userModified: true, launch: brokenLaunch, inferredLaunch: brokenLaunch }
     ],
     groups: [],
-    settings: { maxLogLines: 10000, closeToTray: true }
+    settings: { maxLogLines: 10000 }
   }, null, 2));
   const port = 19223;
   const chromiumTestArgs = [
@@ -216,8 +216,8 @@ async function main() {
     const windowControls = await client.evaluate(`(async () => { const before = await window.devLauncher.getWindowState(); await window.devLauncher.toggleMaximizeWindow(); await new Promise((resolve) => setTimeout(resolve, 250)); const maximized = await window.devLauncher.getWindowState(); await window.devLauncher.toggleMaximizeWindow(); await new Promise((resolve) => setTimeout(resolve, 250)); const restored = await window.devLauncher.getWindowState(); return { before: before.maximized, maximized: maximized.maximized, restored: restored.maximized }; })()`);
     assert.deepEqual(windowControls.result.value, { before: false, maximized: true, restored: false });
 
-    const settings = await client.evaluate(`document.querySelector('[data-view="settings"]').click(); ({ title: document.querySelector('#pageTitle').textContent, closeToTray: document.querySelector('[data-setting="closeToTray"]').checked, maxLogLines: document.querySelector('[data-setting="maxLogLines"]').value, hiddenProjects: document.querySelectorAll('.hidden-project-row').length })`);
-    assert.deepEqual(settings.result.value, { title: '设置', closeToTray: true, maxLogLines: '10000', hiddenProjects: 1 });
+    const settings = await client.evaluate(`document.querySelector('[data-view="settings"]').click(); ({ title: document.querySelector('#pageTitle').textContent, maxLogLines: document.querySelector('[data-setting="maxLogLines"]').value, hiddenProjects: document.querySelectorAll('.hidden-project-row').length })`);
+    assert.deepEqual(settings.result.value, { title: '设置', maxLogLines: '10000', hiddenProjects: 1 });
     if (process.env.DEV_LAUNCHER_SETTINGS_SCREENSHOT) {
       await client.evaluate(`new Promise((resolve) => setTimeout(resolve, 230))`);
       const capture = await client.send('Page.captureScreenshot', { format: 'png', fromSurface: true, captureBeyondViewport: false });

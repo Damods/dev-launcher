@@ -80,10 +80,10 @@ test('settings updates are validated and persisted', async (t) => {
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const file = path.join(directory, 'state.json');
   const store = new StateStore(file, encryption);
-  const settings = store.updateSettings({ closeToTray: false, maxLogLines: 5000 });
-  assert.deepEqual(settings, { closeToTray: false, maxLogLines: 5000, theme: '' });
+  const settings = store.updateSettings({ maxLogLines: 5000 });
+  assert.deepEqual(settings, { maxLogLines: 5000, theme: '' });
   assert.throws(() => store.updateSettings({ maxLogLines: 1234 }), /日志保留上限无效/);
   assert.throws(() => store.updateSettings({ theme: 'blue' }), /主题设置无效/);
   store.updateSettings({ theme: 'dark' });
-  assert.deepEqual(new StateStore(file, encryption).getState().settings, { closeToTray: false, maxLogLines: 5000, theme: 'dark' });
+  assert.deepEqual(new StateStore(file, encryption).getState().settings, { maxLogLines: 5000, theme: 'dark' });
 });

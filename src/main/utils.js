@@ -59,4 +59,13 @@ function quoteWindowsArg(value) {
   return `"${text.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\+)$/, '$1$1')}"`;
 }
 
-module.exports = { normalizePath, projectId, stripAnsi, extractUrls, parseArgs, quoteWindowsArg };
+// 关闭主窗口时是否直接退出主进程。
+// 返回 true = 主进程可退出（无运行项目，避免 NSIS 升级检测到存活进程被阻断）；
+// 返回 false = 应阻止关闭，让用户先停止运行中的项目。
+// 兼容 undefined / null / NaN：当作 0 处理（保守地允许退出，避免升级卡住）。
+function shouldQuitOnWindowClose(runningProjectCount) {
+  if (typeof runningProjectCount !== 'number' || Number.isNaN(runningProjectCount)) return true;
+  return runningProjectCount <= 0;
+}
+
+module.exports = { normalizePath, projectId, stripAnsi, extractUrls, parseArgs, quoteWindowsArg, shouldQuitOnWindowClose };

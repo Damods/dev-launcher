@@ -4,7 +4,7 @@ const { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeImage, safeS
 const { StateStore } = require('./store');
 const { scanRoot } = require('./scanner');
 const { ProcessManager } = require('./process-manager');
-const { parseArgs } = require('./utils');
+const { parseArgs, shouldQuitOnWindowClose } = require('./utils');
 
 // Liquid Glass 材质依赖 GPU 加速渲染 backdrop-filter,默认开启硬件加速。
 // 若在个别机器上遇到驱动崩溃,可设置环境变量 DEV_LAUNCHER_SOFTWARE=1 回退软件渲染。
@@ -127,19 +127,23 @@ function createWindow() {
   mainWindow.on('close', (event) => {
     if (isQuitting) return;
     event.preventDefault();
-    if (store.getState().settings.closeToTray) {
-      mainWindow.hide();
-      if (!trayNoticeShown && tray) {
-        trayNoticeShown = true;
-        tray.displayBalloon({
-          title: 'Dev Launcher 仍在运行',
-          content: '窗口已缩小到系统托盘，正在运行的项目不会停止。',
-          iconType: 'info'
-        });
-      }
-    } else {
-      requestQuit();
+    const runningCount = processManager?.runningIds().length || 0;
+    if (shouldQuitOnWindowClose(runningCount)) {
+      // 无运行项目，直接退出主进程——避免 NSIS 升级检测到 Dev Launcher.exe 存活而阻断升级。
+      isQuitting = true;
+      app.quit();
+      return;
     }
+    // 有运行项目：弹提示框阻止关闭，避免后台进程被强杀/升级被打断。
+    dialog.showMessageBox(mainWindow, {
+      type: 'warning',
+      title: 'Dev Launcher 正在运行项目',
+      message: `仍有 ${runningCount} 个项目正在运行。`,
+      detail: '请先停止所有运行中的项目，再关闭 Dev Launcher，避免子进程被遗留或升级被打断。',
+      buttons: ['知道了'],
+      defaultId: 0,
+      cancelId: 0
+    });
   });
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:\/\//i.test(url)) shell.openExternal(url);

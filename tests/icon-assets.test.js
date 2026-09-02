@@ -49,16 +49,24 @@ test('outer app surface fills the window without a frame', () => {
   assert.match(appWindow, /box-shadow:\s*none;/);
 });
 
-test('liquid glass material uses real backdrop blur with a software fallback', () => {
+test('dark minimal UI: flat surfaces, modal-only blur, aligned window base colors', () => {
   const styles = fs.readFileSync(path.resolve(__dirname, '..', 'src', 'renderer', 'styles.css'), 'utf8');
   const main = fs.readFileSync(path.resolve(__dirname, '..', 'src', 'main', 'main.js'), 'utf8');
-  assert.match(styles, /backdrop-filter\s*:[^;]*blur\(/);
-  // 主面板模糊半径是液态玻璃的核心:必须足够大(≥40px)才能透出背景层次
-  const blurLg = Number(styles.match(/--lg-blur-lg:\s*(\d+)px;/)?.[1] || 0);
-  assert.ok(blurLg >= 40, `expected --lg-blur-lg >= 40px, got ${blurLg}px`);
-  // 饱和度必须克制,过高的 saturate 是"AI 味"的主要来源
-  const saturate = Number(styles.match(/--lg-saturate:\s*(\d+)%;/)?.[1] || 0);
-  assert.ok(saturate > 0 && saturate <= 150, `expected --lg-saturate <= 150%, got ${saturate}%`);
+  // 液态玻璃令牌必须全部移除
+  assert.doesNotMatch(styles, /--lg-[\w-]+\s*:/);
+  assert.doesNotMatch(styles, /glass-breathe/);
+  // backdrop-filter 仅允许保留在模态框及其遮罩上
+  const blurLines = styles.split('\n').filter((line) => /backdrop-filter\s*:[^;]*blur\(/.test(line));
+  assert.ok(blurLines.length > 0, 'modal blur should be kept');
+  for (const line of blurLines) {
+    assert.match(line, /\.modal|\.palette-overlay|prefers-reduced-transparency/, `unexpected blur outside modal: ${line.trim()}`);
+  }
+  // 深色基底与天空蓝强调色
+  assert.match(styles, /--page:\s*#0b0e14;/);
+  assert.match(styles, /--surface:\s*#0f172a;/);
+  assert.match(styles, /#38bdf8/);
+  // 主进程窗口底色必须与 CSS 基底对齐,防止启动闪旧色
+  assert.match(main, /backgroundColor: theme === 'dark' \? '#0b0e14' : '#f1f5f9'/);
   assert.doesNotMatch(styles, /content-visibility:\s*auto;/);
   assert.match(main, /DEV_LAUNCHER_SOFTWARE/);
 });

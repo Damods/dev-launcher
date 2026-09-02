@@ -184,7 +184,7 @@ async function main() {
       await client.evaluate(`document.documentElement.dataset.theme = 'light'`);
       await client.evaluate(`new Promise((resolve) => setTimeout(resolve, 230))`);
       const lightSurface = await client.evaluate(`({ theme: document.documentElement.dataset.theme, projectBackground: getComputedStyle(document.querySelector('.project-card')).backgroundColor })`);
-      assert.deepEqual(lightSurface.result.value, { theme: 'light', projectBackground: 'rgba(255, 255, 255, 0.26)' });
+      assert.deepEqual(lightSurface.result.value, { theme: 'light', projectBackground: 'rgba(0, 0, 0, 0)' });
       const bounds = await client.evaluate(`(() => { const rect = document.documentElement.getBoundingClientRect(); return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, scale: 1 }; })()`);
       const capture = await client.send('Page.captureScreenshot', { format: 'png', fromSurface: true, captureBeyondViewport: false, clip: bounds.result.value });
       await fs.mkdir(path.dirname(process.env.DEV_LAUNCHER_FULL_SCREENSHOT), { recursive: true });
@@ -203,7 +203,7 @@ async function main() {
       await client.evaluate(`commitTheme('dark', false); document.documentElement.dataset.theme`);
       await client.evaluate(`new Promise((resolve) => setTimeout(resolve, 230))`);
       const darkSurface = await client.evaluate(`({ theme: document.documentElement.dataset.theme, projectBackground: getComputedStyle(document.querySelector('.project-card')).backgroundColor })`);
-      assert.deepEqual(darkSurface.result.value, { theme: 'dark', projectBackground: 'rgba(255, 255, 255, 0.04)' });
+      assert.deepEqual(darkSurface.result.value, { theme: 'dark', projectBackground: 'rgba(0, 0, 0, 0)' });
       const capture = await client.send('Page.captureScreenshot', { format: 'png', fromSurface: true, captureBeyondViewport: false });
       await fs.mkdir(path.dirname(process.env.DEV_LAUNCHER_DARK_SCREENSHOT), { recursive: true });
       await fs.writeFile(process.env.DEV_LAUNCHER_DARK_SCREENSHOT, Buffer.from(capture.data, 'base64'));

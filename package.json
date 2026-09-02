@@ -1,6 +1,6 @@
 {
   "name": "dev-launcher",
-  "version": "1.12.3",
+  "version": "1.13.0",
   "description": "自动发现并一键启动本地 Java 与前端项目的 Windows 桌面应用",
   "main": "src/main/main.js",
   "author": "Dev Launcher",

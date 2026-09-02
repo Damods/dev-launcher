@@ -59,10 +59,10 @@ function quoteWindowsArg(value) {
   return `"${text.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\+)$/, '$1$1')}"`;
 }
 
-// 关闭主窗口时是否直接退出主进程。
-// 返回 true = 主进程可退出（无运行项目，避免 NSIS 升级检测到存活进程被阻断）；
-// 返回 false = 应阻止关闭，让用户先停止运行中的项目。
-// 兼容 undefined / null / NaN：当作 0 处理（保守地允许退出，避免升级卡住）。
+// 关闭主窗口时的处置判断（配合 main.js 的 close 事件使用）。
+// 返回 true  = 无运行项目，允许把窗口隐藏到系统托盘（应用继续驻留，可经托盘唤醒）；
+// 返回 false = 有运行项目，应阻止关闭，让用户先停止运行中的项目。
+// 兼容 undefined / null / NaN：当作 0 处理（保守地允许隐藏，避免关闭流程卡死）。
 function shouldQuitOnWindowClose(runningProjectCount) {
   if (typeof runningProjectCount !== 'number' || Number.isNaN(runningProjectCount)) return true;
   return runningProjectCount <= 0;

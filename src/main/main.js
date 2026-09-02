@@ -131,9 +131,17 @@ function createWindow() {
     event.preventDefault();
     const runningCount = processManager?.runningIds().length || 0;
     if (shouldQuitOnWindowClose(runningCount)) {
-      // 无运行项目，直接退出主进程——避免 NSIS 升级检测到 Dev Launcher.exe 存活而阻断升级。
-      isQuitting = true;
-      app.quit();
+      // 无运行项目：隐藏窗口到托盘，避免用户误以为软件已退出。
+      mainWindow.hide();
+      // 首次隐藏到托盘时显示提示，告知用户软件仍在后台运行。
+      if (!trayNoticeShown) {
+        trayNoticeShown = true;
+        tray.displayBalloon({
+          title: 'Dev Launcher',
+          content: '已最小化到系统托盘，点击托盘图标可重新打开',
+          icon: nativeImage.createFromPath(path.join(app.getAppPath(), 'assets', 'icon-32.png'))
+        });
+      }
       return;
     }
     // 有运行项目：弹提示框阻止关闭，避免后台进程被强杀/升级被打断。

@@ -12,6 +12,14 @@ Dev Launcher is a Windows desktop application that automatically discovers and o
 
 It ships with a dedicated Windows icon used for the main window, branding area, taskbar, system tray, desktop shortcut, and installer.
 
+## Screenshots
+
+Dark / light themes can be switched at any time:
+
+| Dark | Light |
+|:---:|:---:|
+| ![Dark theme](docs/screenshots/v1.13.0-dark.png) | ![Light theme](docs/screenshots/v1.13.0-light.png) |
+
 ## Features
 
 - Add one or more code root directories and recursively scan them in the background
@@ -25,7 +33,7 @@ It ships with a dedicated Windows icon used for the main window, branding area, 
 - Auto-extract HTTP/HTTPS URLs from logs for manual copy or open
 - Clickable HTTP/HTTPS URLs inside log content that open in your default browser
 - Create frontend/backend launch groups and start/stop them with one click
-- Minimize to the system tray when the window is closed
+- On window close: quit directly when no projects are running; when projects are running, a confirmation prompt blocks accidental closing (no orphaned child processes), and the window can be restored from the system tray
 - Local persisted configuration; environment variables are encrypted at the Windows current-user scope
 
 ## Installation
